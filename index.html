@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Rush - Luxury Priyanka Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #09090b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Cinzel', 'Georgia', serif;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 100%);
+            border: 4px solid #d4af37; 
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(212, 175, 55, 0.15), 0 0 30px rgba(0,0,0,0.8);
+        }
+        #gameBrand {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+            color: #111;
+            padding: 5px 14px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            text-transform: uppercase;
+        }
+        #basket {
+            position: absolute;
+            bottom: 25px;
+            left: 160px;
+            width: 85px;
+            height: 22px;
+            background: linear-gradient(to bottom, #d4af37, #aa771c);
+            border-radius: 4px;
+            border-top: 3px solid #fffdf0;
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4), inset 0 2px 4px rgba(255,255,255,0.4);
+        }
+        .coin {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: radial-gradient(circle at 35% 35%, #fffdf0 0%, #d4af37 40%, #aa771c 100%);
+            border: 1.5px solid #fff;
+            border-radius: 50%;
+            top: -30px;
+            box-shadow: 0 0 15px #d4af37, inset 0 0 4px rgba(0,0,0,0.4);
+        }
+        #scoreBoard {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #d4af37;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(12, 10, 9, 0.98);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            z-index: 10;
+        }
+        #gameOverScreen {
+            display: none;
+        }
+        .btn {
+            margin-top: 25px;
+            padding: 12px 35px;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #bf953f, #aa771c);
+            color: white;
+            border: 1px solid #fcf6ba;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(170, 119, 28, 0.4);
+            transition: 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(212, 175, 55, 0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="scoreBoard">SCORE: <span id="score" style="color: #fff;">0</span></div>
+        <div id="gameBrand">By: Priyanka</div>
+        
+        <div id="basket"></div>
+        
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <p style="font-size: 32px; color: #d4af37; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px;">COIN RUSH</p>
+            <p style="font-size: 11px; color: #a1a1aa; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 15px;">Luxury Edition</p>
+            <button class="btn" onclick="startGame()">Enter Game</button>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen">
+            <p style="font-size: 28px; color: #ef4444; font-weight: bold; letter-spacing: 2px; margin-bottom: 10px;">GAME OVER</p>
+            <p style="font-size: 18px; color: #a1a1aa;">TOTAL WEALTH: <span id="finalScore" style="color: #d4af37; font-weight: bold;">0</span></p>
+            <button class="btn" onclick="resetGame()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('gameContainer');
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreDisplay = document.getElementById('finalScore');
+
+        const bgMusic = new Audio('https://google.com');
+        bgMusic.loop = true; 
+        bgMusic.volume = 0.25; 
+
+        const coinSound = new Audio('https://google.com');
+        const gameOverSound = new Audio('https://google.com');
+
+        let score = 0;
+        let gameActive = false;
+        let coinInterval;
+        let gameLoopInterval;
+        let coins = [];
+        let coinSpeed = 5.5;
+
+        // Desktop Mouse Controls
+        container.addEventListener('mousemove', (e) => {
+            if (!gameActive) return;
+            const rect = container.getBoundingClientRect();
+            let basketX = e.clientX - rect.left - (basket.offsetWidth / 2);
+            if (basketX < 0) basketX = 0;
+            if (basketX > container.offsetWidth - basket.offsetWidth) basketX = container.offsetWidth - basket.offsetWidth;
+            basket.style.left = basketX + 'px';
+        });
+
+        // Mobile Touch Controls
+        container.addEventListener('touchmove', (e) => {
+            if (!gameActive) return;
+            const rect = container.getBoundingClientRect();
+            let basketX = e.touches[0].clientX - rect.left - (basket.offsetWidth / 2);
+            if (basketX < 0) basketX = 0;
+            if (basketX > container.offsetWidth - basket.offsetWidth) basketX = container.offsetWidth - basket.offsetWidth;
+            basket.style.left = basketX + 'px';
+        });
+
+        function createCoin() {
+            if (!gameActive) return;
+            const coin = document.createElement('div');
+            coin.classList.add('coin');
+            const randomX = Math.floor(Math.random() * (container.offsetWidth - 26));
+            coin.style.left = randomX + 'px';
+            coin.style.top = '-30px';
+            container.appendChild(coin);
+            coins.push(coin);
+        }
+
+        function updateGame() {
+            if (!gameActive) return;
+
+            for (let i = coins.length - 1; i >= 0; i--) {
+                let coin = coins[i];
+                let currentTop = parseInt(coin.style.top);
+                coin.style.top = (currentTop + coinSpeed) + 'px';
+
+                let coinRect = coin.getBoundingClientRect();
+                let basketRect = basket.getBoundingClientRect();
+
+                if (
+                    coinRect.bottom >= basketRect.top &&
+                    coinRect.right >= basketRect.left &&
+                    coinRect.left <= basketRect.right &&
+                    coinRect.top <= basketRect.bottom
+                ) {
+                    score++;
+                    scoreDisplay.innerText = score;
+                    
+                    coinSound.currentTime = 0;
+                    coinSound.play();
+
+                    coin.remove();
+                    coins.splice(i, 1);
+                    if (score % 5 === 0) coinSpeed += 0.5;
+                    continue;
+                }
+
+                if (currentTop > container.offsetHeight) {
+                    endGame();
+                    break;
+                }
+            }
+        }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            bgMusic.play(); 
+            resetGame();
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(coinInterval);
+            clearInterval(gameLoopInterval);
+            
+            bgMusic.pause(); 
+            gameOverSound.play(); 
+
+            finalScoreDisplay.innerText = score;
+            gameOverScreen.style.display = 'flex';
+            coins.forEach(c => c.remove());
+            coins = [];
+        }
+
+        function resetGame() {
+            score = 0;
+            coinSpeed = 5.5;
+            scoreDisplay.innerText = '0';
+            gameOverScreen.style.display = 'none';
+            gameActive = true;
+            bgMusic.currentTime = 0;
+            bgMusic.play();
+            coinInterval = setInterval(createCoin, 950); 
+            gameLoopInterval = setInterval(updateGame, 20);
+        }
+    </script>
+</body>
+</html>
